@@ -1,4 +1,5 @@
 function retval = numerical(f, a, b, userChoice)
+  eps = 1e-6;
   if nargin == 0
     disp("Enter arguments: function, a, b, userChoice");
     return;
@@ -14,20 +15,37 @@ function retval = numerical(f, a, b, userChoice)
     graph(f, a, b, res);
   else
     tic;
-    res = newton(f, a, b);
-    graph(f, a, b, res);
+    bin_res = binsearch(f, a, b);
+    bin_res = uniquetol(bin_res, eps);
+    for i = 1:50
+      bin_res = [bin_res, binsearch(f, bin_res(end), b)];
+      bin_res = uniquetol(bin_res, eps);
+    end
     elapsedTime = toc;
-    disp(["Newton method time (with complex roots): ", num2str(elapsedTime)]);
-
-    tic;
-    res = binsearch(f, a, b);
-    elapsedTime = toc;
+    disp(["Binsearch solutions: ", num2str(bin_res)]);
     disp(["Binsearch method time: ", num2str(elapsedTime)]);
+    disp("");
 
     tic;
-    res = fzero_method(f, a, b);
+    fzero_res = fzero_method(f, a, b);
+    fzero_res = uniquetol(fzero_res, eps);
     elapsedTime = toc;
+    disp(["Fzero solutions: ", num2str(fzero_res)]);
     disp(["Fzero method time: ", num2str(elapsedTime)]);
+    disp("");
+
+    tic;
+    [new_res, real_res] = newton(f, a, b);
+    graph(f, a, b, new_res);
+    elapsedTime = toc;
+    real_res = uniquetol(real_res, eps);
+    disp(["Newton solutions: ", num2str(real_res)]);
+    disp(["Newton method time (with complex roots): ", num2str(elapsedTime)]);
+    disp("");
+
+    disp(["Difference between fzero and newton: ", num2str(fzero_res - real_res)]);
+    disp(["Difference between fzero and binsearch: ", num2str(fzero_res - bin_res)]);
+    disp(["Difference between newton and binsearch: ", num2str(real_res - bin_res)]);
   end
 end
 
@@ -36,13 +54,13 @@ function df = dfunc(f, x)
   df = (f(x + h) - f(x)) / h;
 end
 
-function res = newton(f, a, b)
+function [res, real_res] = newton(f, a, b)
   eps = 1e-6;
   max_iter = 40;
   res = [];
-
-  for x_real = a:0.1:b
-    for x_image = a:0.1:b
+  real_res = [];
+  for x_real = a:0.5:b
+    for x_image = a:0.5:b
       x0 = complex(x_real, x_image);
       x = x0 - f(x0) / dfunc(f, x0);
       count = 0;
@@ -51,8 +69,11 @@ function res = newton(f, a, b)
         x = x0 - f(x0) / dfunc(f, x0);
         count = count + 1;
       end
-      if (count < max_iter && real(x) >= -2 && real(x) <= 2)
-          res = [res, x0];
+      if (count < max_iter && real(x) >= a && real(x) <= b)
+        res = [res, x0];
+        if (imag(x0) == 0)
+          real_res = [real_res, real(x0)];
+        end
       end
     end
   end
@@ -101,6 +122,32 @@ function graph(f, a, b, res)
   hold off
 end
 
+##>> numerical(@(x)-x.^2+1, -2, 2, "1")
+##Binsearch solutions: -1           1
+##Binsearch method time: 0.003063
+##
+##Fzero solutions: -1           1
+##Fzero method time: 0.10412
+##
+##Newton solutions: -1           1
+##Newton method time (with complex roots): 2.9611
+##
+##Difference between fzero and newton: 8.2637e-08 -6.6613e-16
+##Difference between fzero and binsearch: -8.8818e-16  4.7684e-07
+##Difference between newton and binsearch: -8.2637e-08  4.7684e-07
 
+##>> numerical(@(x)x.^3-1, -2, 2, "1")
+##Binsearch solutions: 1
+##Binsearch method time: 0.056712
+##
+##Fzero solutions: 1
+##Fzero method time: 0.14462
+##
+##Newton solutions: 1
+##Newton method time (with complex roots): 3.2589
+##
+##Difference between fzero and newton: 0
+##Difference between fzero and binsearch: 0
+##Difference between newton and binsearch: 0
 
 
