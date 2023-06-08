@@ -8,8 +8,16 @@ function retval = numerical(f, a, b, userChoice)
     res = newton(f, a, b);
     graph(f, a, b, res);
   elseif strcmp(userChoice, "binsearch")
-    res = binsearch(f, a, b);
-    graph(f, a, b, res);
+    bin_res = binsearch(f, a, b);
+    bin_res = uniquetol(bin_res, eps);
+    if length(bin_res != 0)
+      for i = 1:50
+        bin_res = [bin_res, binsearch(f, bin_res(end), b)];
+        bin_res = uniquetol(bin_res, eps);
+      end
+    endif
+    disp(bin_res);
+    graph(f, a, b, bin_res);
   elseif strcmp(userChoice, "fzero")
     res = fzero_method(f, a, b);
     graph(f, a, b, res);
@@ -17,10 +25,12 @@ function retval = numerical(f, a, b, userChoice)
     tic;
     bin_res = binsearch(f, a, b);
     bin_res = uniquetol(bin_res, eps);
-    for i = 1:50
-      bin_res = [bin_res, binsearch(f, bin_res(end), b)];
-      bin_res = uniquetol(bin_res, eps);
-    end
+    if length(bin_res != 0)
+      for i = 1:50
+        bin_res = [bin_res, binsearch(f, bin_res(end), b)];
+        bin_res = uniquetol(bin_res, eps);
+      end
+    endif
     elapsedTime = toc;
     disp(["Binsearch solutions: ", num2str(bin_res)]);
     disp(["Binsearch method time: ", num2str(elapsedTime)]);
@@ -40,7 +50,7 @@ function retval = numerical(f, a, b, userChoice)
     elapsedTime = toc;
     real_res = uniquetol(real_res, eps);
     disp(["Newton solutions: ", num2str(real_res)]);
-    disp(["Newton method time (with complex roots): ", num2str(elapsedTime)]);
+    disp(["Newton method time (complex roots): ", num2str(elapsedTime)]);
     disp("");
 
     disp(["Difference between fzero and newton: ", num2str(fzero_res - real_res)]);
@@ -150,4 +160,16 @@ end
 ##Difference between fzero and binsearch: 0
 ##Difference between newton and binsearch: 0
 
-
+##>> numerical(@(x) x.^3+x.^2+1, -2, 2,"1")
+##Binsearch solutions: -1.4656
+##Binsearch method time: 0.051034
+##
+##Fzero solutions: -1.4656
+##Fzero method time: 0.10398
+##
+##Newton solutions: -1.4656
+##Newton method time (complex roots): 1.0749
+##
+##Difference between fzero and newton: 9.7284e-07
+##Difference between fzero and binsearch: 1.7163e-07
+##Difference between newton and binsearch: -8.0122e-07
